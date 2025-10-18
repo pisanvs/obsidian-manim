@@ -1,56 +1,30 @@
-import { Plugin } from 'obsidian';
-import { DEFAULT_SETTINGS, GraphvizSettings, GraphvizSettingsTab } from './setting';
-import { Processors } from './processors';
-import { Suggesters } from './suggesters';
+// NOTE: This is an example integration snippet. Integrate into your plugin's onload where you register Markdown post processors / preview renderers.
+// If your plugin already handles graphviz blocks, replace or extend that logic to call the ManimRenderer.
 
-// Remember to rename these classes and interfaces!
+import { Plugin, MarkdownPostProcessorContext } from "obsidian";
+import { ManimRenderer } from "./manimRenderer";
 
-
-export default class GraphvizPlugin extends Plugin {
-  settings: GraphvizSettings;
+export default class ManimPlugin extends Plugin {
+  private manimRenderer: ManimRenderer;
 
   async onload() {
-    console.debug('Load graphviz plugin');
-    await this.loadSettings();
-    this.addSettingTab(new GraphvizSettingsTab(this));
-    const processors = new Processors(this);
-    const suggesters = new Suggesters(this);
-    const d3Sources = ['https://d3js.org/d3.v5.min.js',
-      'https://unpkg.com/@hpcc-js/wasm@0.3.11/dist/index.min.js',
-      'https://unpkg.com/d3-graphviz@3.0.5/build/d3-graphviz.js'];
+    this.manimRenderer = new ManimRenderer({
+      serverUrl: "http://localhost:8000",
+      defaultFormat: "mp4",
+      defaultQuality: "low",
+    });
 
-
-    this.app.workspace.onLayoutReady(() => {
-      switch (this.settings.renderer) {
-        case 'd3_graphviz':
-          for (const src of d3Sources) {
-            const script = document.createElement('script');
-            script.src = src;
-            (document.head || document.documentElement).appendChild(script);
-          }
-          this.registerMarkdownCodeBlockProcessor('dot', processors.d3graphvizProcessor.bind(processors));
-          break;
-        default:
-          this.registerMarkdownCodeBlockProcessor('dot', processors.imageProcessor.bind(processors));
-      }
-
-      this.registerEditorSuggest(new Suggesters(this.app, this));
+    // Register a markdown post processor for code fences labeled "manim"
+    this.registerMarkdownCodeBlockProcessor("manim", async (source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext) => {
+      // `source` is the code block content; `ctx` has the info string accessible via ctx.getSectionInfo? If not, we parse via the plugin's API.
+      // Obsidian's API for code block info string is not exposed to this callback; as a workaround, we look at el.dataset.language or the parent?
+      // For simplicity, we'll attempt to read the info string from the pre > code element's class or data-language attributes if available.
+      const infoAttr = (el.getAttribute("data-language") || "");
+      await this.manimRenderer.renderCodeBlock(source, infoAttr, el);
     });
   }
 
-
-
   onunload() {
-    console.debug('Unload graphviz plugin');
-  }
-
-  async loadSettings(): Promise<void> {
-    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
-    return Promise.resolve();
-  }
-
-
-  async saveSettings() {
-    await this.saveData(this.settings);
+    // cleanup if needed
   }
 }
