@@ -9,13 +9,14 @@ This adds a Manim-backed visualizer to Obsidian. It works by sending Manim code 
 2) Install Python dependencies for the local server
    - pip install flask manim
 
-3) Run the server
+3) (optional) Run the server
    - python manim-server.py --port 8000
    - The server listens on localhost by default.
 
 4) Usage in notes
-   - Create a code fence labelled `manim` with optional info flags:
-     ```manim scene=MyScene format=mp4 quality=medium
+   - Create a code fence labelled `manim` with optional info flags as a comment:
+     ```manim
+     #scene=MyScene format=mp4 quality=medium
      from manim import *
      class MyScene(Scene):
          def construct(self):
@@ -27,8 +28,8 @@ This adds a Manim-backed visualizer to Obsidian. It works by sending Manim code 
    - Configure the server URL (default http://localhost:8000), default format (mp4), and quality via plugin settings (if you add UI).
 
 Security note:
-- The server executes given Python code with Manim. Only render code from trustable notes. Don't expose the server to networks beyond localhost.
+- The server executes given Python code with Manim. Only render code from trusted sources. Don't expose the server to networks beyond localhost.
 
 Troubleshooting:
-- If render fails, check manim-server.py logs and the manim CLI output (the server returns stdout/stderr on failure).
+- If render fails, check manim-server.py logs, the manim CLI output, and obsidian devtools (the server returns stdout/stderr on failure).
 - Ensure ffmpeg and other native deps are installed.
